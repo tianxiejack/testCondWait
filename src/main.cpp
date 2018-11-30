@@ -1,4 +1,4 @@
-#if 1
+#if 0
 #include <iostream>
 #include <pthread.h>
 #include <sys/time.h>
@@ -22,7 +22,9 @@ Ebupt::Ebupt()
 
     pthread_condattr_t condattr;
     pthread_condattr_init(&condattr);
+	//CLOCK_MONOTONIC    //CLOCK_REALTIME
     pthread_condattr_setclock(&condattr, CLOCK_REALTIME);
+	
     pthread_cond_init(&cond, &condattr);
     pthread_condattr_destroy(&condattr);
 
@@ -39,9 +41,14 @@ void Ebupt::dealMsg(long wait_ns)
 {
     pthread_mutex_lock(&mutex);
 
+	
+#if 0
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    struct timespec abstime;
+	struct timespec abstime;
+
+	//CLOCK_MONOTONIC    //CLOCK_REALTIME
+    clock_gettime(CLOCK_MONOTONIC, &now);
+   
 
     if (now.tv_nsec + (wait_ns%1000000000) >= 1000000000)
     {
@@ -53,6 +60,18 @@ void Ebupt::dealMsg(long wait_ns)
         abstime.tv_sec = now.tv_sec + wait_ns/1000000000;
         abstime.tv_nsec = now.tv_nsec + wait_ns%1000000000;
     }
+#else
+	struct timeval now;
+	struct timespec abstime;
+	long wait = wait_ns/1000000;
+	gettimeofday(&now, NULL);
+
+	abstime.tv_sec   = now.tv_sec;
+	abstime.tv_nsec  = now.tv_usec * 1000u;
+	abstime.tv_sec   += wait/1000;
+	abstime.tv_nsec  += (wait%1000) * 1000000u;
+	
+#endif
 
     pthread_cond_timedwait(&cond, &mutex, &abstime);
     pthread_mutex_unlock(&mutex);

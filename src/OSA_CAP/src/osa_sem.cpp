@@ -4,7 +4,7 @@
 #include <osa_sem.h>
 #include <errno.h>
 
-#define FLAG1 1
+
 
 int OSA_semCreate(OSA_SemHndl *hndl, Uint32 maxCount, Uint32 initVal)
 {
@@ -14,8 +14,9 @@ int OSA_semCreate(OSA_SemHndl *hndl, Uint32 maxCount, Uint32 initVal)
  
   status |= pthread_mutexattr_init(&mutex_attr);
   status |= pthread_condattr_init(&cond_attr);  
-#if FLAG1
-  pthread_condattr_setclock(&cond_attr, CLOCK_REALTIME);
+#if 1
+  //CLOCK_REALTIME   CLOCK_MONOTONIC
+  pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
 #endif
   status |= pthread_mutex_init(&hndl->lock, &mutex_attr);
   status |= pthread_cond_init(&hndl->cond, &cond_attr);  
@@ -42,23 +43,23 @@ void maketimeout(struct timespec *tsp,long msec)
 {
 	
 
-#if FLAG1
+#if 1
 	struct timespec now;
 
-	clock_gettime(CLOCK_REALTIME, &now);
+	clock_gettime(CLOCK_MONOTONIC, &now);
 
 	struct timespec abstime;
-
-	if (now.tv_nsec + ( msec*1000%1000000000) >= 1000000000)
-   {
-	   abstime.tv_sec = now.tv_sec + msec*1000/1000000000 + 1;
-	   abstime.tv_nsec = (now.tv_nsec + msec*1000%1000000000)%1000000000;
-   }
-   else
-   {
-	   abstime.tv_sec = now.tv_sec + msec*1000/1000000000;
-	   abstime.tv_nsec = now.tv_nsec + msec*1000%1000000000;
-   }
+	long wait_ns = msec*1000000;
+	if (now.tv_nsec + (wait_ns%1000000000) >= 1000000000)
+	{
+	   abstime.tv_sec = now.tv_sec + wait_ns/1000000000 + 1;
+	   abstime.tv_nsec = (now.tv_nsec + wait_ns%1000000000)%1000000000;
+	}
+	else
+	{
+	   abstime.tv_sec = now.tv_sec + wait_ns/1000000000;
+	   abstime.tv_nsec = now.tv_nsec + wait_ns%1000000000;
+	}
 
 	tsp->tv_sec = abstime.tv_sec;
 	tsp->tv_nsec = abstime.tv_nsec;

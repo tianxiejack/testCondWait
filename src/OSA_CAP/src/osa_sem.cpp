@@ -16,7 +16,7 @@ int OSA_semCreate(OSA_SemHndl *hndl, Uint32 maxCount, Uint32 initVal)
   status |= pthread_condattr_init(&cond_attr);  
 #if 1
   //CLOCK_REALTIME   CLOCK_MONOTONIC
-  pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC);
+  pthread_condattr_setclock(&cond_attr, CLOCK_REALTIME);
 #endif
   status |= pthread_mutex_init(&hndl->lock, &mutex_attr);
   status |= pthread_cond_init(&hndl->cond, &cond_attr);  
@@ -42,11 +42,15 @@ int OSA_semCreate(OSA_SemHndl *hndl, Uint32 maxCount, Uint32 initVal)
 void maketimeout(struct timespec *tsp,long msec)
 {
 	
-
 #if 1
 	struct timespec now;
+	struct timeval tmp;
 
-	clock_gettime(CLOCK_MONOTONIC, &now);
+	clock_gettime(CLOCK_REALTIME, &now);
+	gettimeofday(&tmp, NULL);
+	
+printf("clock_gettime	 sec :	 %ld , nsec :	%ld  \n",now.tv_sec,now.tv_nsec);
+printf("gettimeofday	sec :	%ld , usec :   %ld	\n",tmp.tv_sec,tmp.tv_usec);
 
 	struct timespec abstime;
 	long wait_ns = msec*1000000;
@@ -65,9 +69,14 @@ void maketimeout(struct timespec *tsp,long msec)
 	tsp->tv_nsec = abstime.tv_nsec;
 
 #else
+	struct timespec tmp;
 	struct timeval now;
 
+	clock_gettime(CLOCK_REALTIME, &tmp);
 	gettimeofday(&now, NULL);
+	
+printf("clock_gettime	 sec :	 %ld , nsec :	%ld  \n",tmp.tv_sec,tmp.tv_nsec);
+printf("gettimeofday    sec :   %ld , usec :   %ld  \n",now.tv_sec,now.tv_usec);
 
 	tsp->tv_sec = now.tv_sec;
 	tsp->tv_nsec= now.tv_usec * 1000u;

@@ -22,7 +22,7 @@ Ebupt::Ebupt()
 
     pthread_condattr_t condattr;
     pthread_condattr_init(&condattr);
-    pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
+    pthread_condattr_setclock(&condattr, CLOCK_REALTIME);
     pthread_cond_init(&cond, &condattr);
     pthread_condattr_destroy(&condattr);
 
@@ -40,7 +40,7 @@ void Ebupt::dealMsg(long wait_ns)
     pthread_mutex_lock(&mutex);
 
     struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
+    clock_gettime(CLOCK_REALTIME, &now);
     struct timespec abstime;
 
     if (now.tv_nsec + (wait_ns%1000000000) >= 1000000000)
